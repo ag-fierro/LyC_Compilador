@@ -1,0 +1,84 @@
+-/Declaracion de variables/-
+
+DECVAR
+	a, b, c : INT
+	d : float
+		cadena : Char
+ENDDEC
+
+-/Asignaciones/-
+
+a:=1
+b:=0
+d:=1.2
+cadena:="Esto es una cadena"
+
+-/suma, resta, mutiplicacion y division/-
+
+c:=a+b
+c:=2-a*b
+c:=3+a/b
+
+-/condicionales y operadores/-
+
+if(a!=b)
+{
+ a:=2
+}
+
+if(a<b || a==b)
+{
+ a:=10
+}
+else
+{
+ a:=1
+}
+
+if(a==c)
+{
+ a:=1
+
+ if(b==c)
+ {
+  b:=1
+ }
+}
+
+-/iteracion/-
+
+while(b<a)
+{
+ b:=b+1
+}
+
+-/temas especiales AVG e INLIST/-
+
+a := AVG([a,b])
+d := AVG([1+3, b, 2*4.1, c])
+
+if(INLIST (a; [2*b+7 ; 12 ; a+b*(34+d) ; 48]))
+{
+	a:=3
+}
+
+-/Error variable fuera de rango/-
+
+-/int f=99999999999/-
+
+-/Error de caracter no reconocido/-
+
+-/?/-
+
+-/Error sintaxis no reconocida/-
+
+-/char h="hola"/-
+
+-/Entradas y salidas/-
+WRITE "PROBANDO"
+WRITE a
+READ b
+
+
+
+
