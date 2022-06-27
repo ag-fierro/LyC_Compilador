@@ -1,6 +1,8 @@
 // Usa Lexico_ClasePractica
-//Solo expresiones sin ()
+// Solo expresiones sin ()
+
 %{
+  
 #include <stdio.h>
 #include <stdlib.h>
 #include <conio.h>
@@ -120,12 +122,11 @@ void apilar_type(int);
 %token AVG
 %token INLIST
 
-
 %%
 
 /*REGLAS*/
 
-programa_completo:  programa {generar_archivo_cod_inter(); generar_assembler(); printf("Sintactico --> Compilacion OK\n");}
+programa_completo:  programa {/*generar_archivo_cod_inter();*/ generar_assembler(); printf("Sintactico --> Compilacion OK\n");}
 
 programa: sentencia | programa sentencia; 
 
@@ -208,9 +209,7 @@ factor:     PAR_A expresion PAR_C
             | CTE_FLOAT   {insertar((char*)$1); apilar_type(FLOTANTE);}
             | CTE_INTEGER {insertar((char*)$1); apilar_type(ENTERO);};
 
-
 %%
-
 
 int main(int argc, char *argv[]){
   if((yyin = fopen(argv[1], "rt"))==NULL)
@@ -243,8 +242,141 @@ void generar_archivo_cod_inter(){
   fclose(pf);
 }
 
+//Genera el codigo assembler
 void generar_assembler(){
-  //
+  struct t_pi assem[1000];
+  int p_assem = 0, p_pi_aux = 0, free = 1;
+  char strline[100];
+  FILE *pf;
+
+  pf = fopen("assembler.asm", "wt");
+
+  while(pi[p_pi_aux].elemento != NULL){
+    strcpy(elemento,pi[p_pi_aux].elemento);
+    strcpy(assem[p_assem++],pi[p_pi_aux++].elemento);
+
+    //Asignacion
+    if(strcmp(elemento,":=")){
+      if(free){
+        sprintf(strline,"FLD %s",assem[p_assem-1]);
+        fputs(strline,pf);
+      }
+
+      sprintf(strline,"FSTP %s",assem[p_assem-2]);
+      fputs(strline,pf);
+
+      sprintf(strline,"FFREE");
+      fputs(strline,pf);
+      free = 1;
+
+      p_assem -= 2;
+    }
+
+    //Suma
+    if(strcmp(elemento,"+")){
+      sprintf(strline,"FLD %s",assem[p_assem-2]);
+      fputs(strline,pf);
+
+      if(free){
+        sprintf(strline,"FLD %s",assem[p_assem-1]);
+        fputs(strline,pf);
+
+        free = 0;
+      }
+      else
+      {
+        sprintf(strline,"FXCH");//intercambia registro 1 y 0
+      }
+      
+      sprintf(strline,"FADD");//registro 1 = 1 + 0
+      fputs(strline,pf);
+
+      p_assem -= 2;
+    }
+
+    //Resta
+    if(strcmp(elemento,"-")){
+      sprintf(strline,"FLD %s",assem[p_assem-2]);
+      fputs(strline,pf);
+
+      if(free){
+        sprintf(strline,"FLD %s",assem[p_assem-1]);
+        fputs(strline,pf);
+
+        free = 0;
+      }
+      else
+      {
+        sprintf(strline,"FXCH");//intercambia registro 1 y 0
+      }
+      
+      sprintf(strline,"FSUB");//registro 1 = 1 + 0
+      fputs(strline,pf);
+
+      p_assem -= 2;
+    }
+
+    //Multiplicacion
+    if(strcmp(elemento,"*")){
+      sprintf(strline,"FLD %s",assem[p_assem-2]);
+      fputs(strline,pf);
+
+      if(free){
+        sprintf(strline,"FLD %s",assem[p_assem-1]);
+        fputs(strline,pf);
+
+        free = 0;
+      }
+      else
+      {
+        sprintf(strline,"FXCH");//intercambia registro 1 y 0
+      }
+      
+      sprintf(strline,"FMUL");//registro 1 = 1 + 0
+      fputs(strline,pf);
+
+      p_assem -= 2;
+    }
+
+    //Division (revisar dividido 0)
+    if(strcmp(elemento,"/")){
+      sprintf(strline,"FLD %s",assem[p_assem-2]);
+      fputs(strline,pf);
+
+      if(free){
+        sprintf(strline,"FLD %s",assem[p_assem-1]);
+        fputs(strline,pf);
+
+        free = 0;
+      }
+      else
+      {
+        sprintf(strline,"FXCH");//intercambia registro 1 y 0
+      }
+      
+      sprintf(strline,"FDIV");//registro 1 = 1 + 0
+      fputs(strline,pf);
+
+      p_assem -= 2;
+    }
+
+    //Comparacion
+    if(strcmp(elemento,"CMP")){
+      //
+    }
+
+    //Write
+    if(strcmp(elemento,"WRITE_ETIQ")){
+      //
+    }
+
+    //Read
+    if(strcmp(elemento,"READ_ETIQ")){
+      //
+    }
+  }
+
+  fclose(pf);
 }
 
 //Inserta un elemento en la PI

@@ -30,7 +30,6 @@ int lineno = 1;
 
 char yytext_aux[33];
 
-
 %}
 
 /*OPCIONES*/

@@ -30,7 +30,7 @@ _Below is an example of how you can instruct your audience on installing and set
    ```sh
    git clone https://github.com/ag-fierro/LyC_Compilador.git
    ```
-2. moverse al proyecto
+2. Moverse al proyecto
    ```sh
    cd Compilador
    ```
