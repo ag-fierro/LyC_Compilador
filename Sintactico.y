@@ -126,7 +126,7 @@ void apilar_type(int);
 
 /*REGLAS*/
 
-programa_completo:  programa {/*generar_archivo_cod_inter();*/ generar_assembler(); printf("Sintactico --> Compilacion OK\n");}
+programa_completo:  programa { /*generar_archivo_cod_inter(); */ printf("Sintactico --> FIN PARSING"); generar_assembler(); printf("Sintactico --> Compilacion OK\n");}
 
 programa: sentencia | programa sentencia; 
 
@@ -244,16 +244,21 @@ void generar_archivo_cod_inter(){
 
 //Genera el codigo assembler
 void generar_assembler(){
+  
   struct t_pi assem[1000];
   int p_assem = 0, p_pi_aux = 0, free = 1;
+  char elemento[33];
   char strline[100];
   FILE *pf;
 
   pf = fopen("assembler.asm", "wt");
 
+  // Agregando Headers y include de funciones macro
+  fputs("include macros2.asm\ninclude number.asm\n\n.MODEL	LARGE\n.386\n.STACK 200h",pf);
+
   while(pi[p_pi_aux].elemento != NULL){
     strcpy(elemento,pi[p_pi_aux].elemento);
-    strcpy(assem[p_assem++],pi[p_pi_aux++].elemento);
+    strcpy(assem[p_assem++].elemento,pi[p_pi_aux++].elemento);
 
     //Asignacion
     if(strcmp(elemento,":=")){
@@ -367,16 +372,55 @@ void generar_assembler(){
 
     //Write
     if(strcmp(elemento,"WRITE_ETIQ")){
-      //
+      
+      buscar_type(assem[p_assem-1]);
+
+      if ( pila_type[p_pila_type-1] == ENTERO ){
+        sprintf(strline,"DisplayInteger %s",assem[p_assem-1]);
+        fputs(strline,pf);
+      }
+
+      if ( pila_type[p_pila_type-1] == FLOTANTE ){
+        sprintf(strline,"DisplayFloat %s,2",assem[p_assem-1]);
+        fputs(strline,pf);
+      }
+
+      if ( pila_type[p_pila_type-1] == CARAC ){
+        sprintf(strline,"displayString %s",assem[p_assem-1]);
+        fputs(strline,pf);
+      }
+      
+      p_pila_type--;
     }
 
     //Read
     if(strcmp(elemento,"READ_ETIQ")){
-      //
+      
+      buscar_type(assem[p_assem-1]);
+
+      if ( pila_type[p_pila_type-1] == ENTERO ){
+        sprintf(strline,"GetInteger %s",assem[p_assem-1]);
+        fputs(strline,pf);
+      }
+
+      if ( pila_type[p_pila_type-1] == FLOTANTE ){
+        sprintf(strline,"GetFloat %s,2",assem[p_assem-1]);
+        fputs(strline,pf);
+      }
+
+      if ( pila_type[p_pila_type-1] == CARAC ){
+        sprintf(strline,"getString %s",assem[p_assem-1]);
+        fputs(strline,pf);
+      }
+      
+      p_pila_type--;     
+
     }
   }
 
   fclose(pf);
+
+  
 }
 
 //Inserta un elemento en la PI
