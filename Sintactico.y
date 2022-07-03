@@ -258,7 +258,7 @@ void generar_assembler(){
   fputs("include macros2.asm\n",pf);
   fputs("include number.asm\n",pf);
 
-  fputs("\n.MODEL	LARGE\n",pf);
+  fputs("\n.MODEL LARGE\n",pf);
   fputs(".386\n",pf);
   fputs(".STACK 200h\n\n",pf);
 
@@ -266,29 +266,29 @@ void generar_assembler(){
   fgets(ts_line, 99, pf_ts); //Salteo cabecera
 
   while(fgets(ts_line, 99, pf_ts) != NULL){
-    printf("%s",ts_line);
-
     strncpy(name,ts_line,33);
 		name[32] = '\0';
 
-    strncpy(type,&ts_line[34],10);
-    type[10] = '\0';
+    if(name[0] != '_'){
+      strncpy(type,&ts_line[34],10);
+      type[10] = '\0';
 
-    strncpy(val,&ts_line[45],33);
-    val[32] = '\0';
+      strncpy(val,&ts_line[45],33);
+      val[32] = '\0';
 
-    if(strstr(type,"char"))
-      sprintf(strline,"%s %s %s\n",name,"db",val);
-    else
-      sprintf(strline,"%s %s %s\n",name,"dd",val);
+      if(strstr(type,"char"))
+        sprintf(strline,"%s %s %s\n",name,"db",val);
+      else
+        sprintf(strline,"%s %s %s\n",name,"dd",val);
 
-    fputs(strline,pf_ts);
+      fputs(strline,pf);
+    }
   }
 
-  fputs(".CODE\n",pf);
+  fputs("\n.CODE\n",pf);
   fputs("mov AX,@DATA\n",pf);
   fputs("mov DS,AX\n",pf);
-  fputs("mov es,ax\n\n",pf);
+  fputs("mov ES,AX\n\n",pf);
 
   for(i = 0; i < p_pi; i++){
     //Recupera el elemento actual de la PI
@@ -311,7 +311,7 @@ void generar_assembler(){
           strcpy(assem[p_assem++].elemento,val);
         }
         else{ //Si no es constante, recupero su tipo
-          strncpy(type,ts_line,10);
+          strncpy(type,&ts_line[34],10);
           type[10] = '\0';
 
           if(strstr(type,"char")){
@@ -332,11 +332,11 @@ void generar_assembler(){
     //Asignacion
     if(strcmp(elemento,":=") == 0){
       if(free){
-        sprintf(strline,"FLD %s\n",&assem[p_assem-1]);
+        sprintf(strline,"FLD %s",&assem[p_assem-1]);
         fputs(strline,pf);
       }
 
-      sprintf(strline,"FSTP %s\n",&assem[p_assem-2]);
+      sprintf(strline,"FSTP %s",&assem[p_assem-2]);
       fputs(strline,pf);
 
       sprintf(strline,"FFREE\n\n");
