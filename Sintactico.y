@@ -244,22 +244,70 @@ void generar_archivo_cod_inter(){
 
 //Genera el codigo assembler
 void generar_assembler(){
-  
   struct t_pi assem[1000];
   int p_assem = 0, p_pi_aux = 0, free = 1;
-  char elemento[33];
-  char strline[100];
-  FILE *pf;
+  char strline[100], ts_line[100], elemento[33], name[33], val[33], type[10];
+  FILE *pf, *pf_ts;
 
   pf = fopen("assembler.asm", "wt");
+  pf_ts = fopen("assembler.asm", "rt");
 
-  // Agregando Headers y include de funciones macro
-  fputs("include macros2.asm\ninclude number.asm\n\n.MODEL	LARGE\n.386\n.STACK 200h",pf);
+  //Agregando Headers y include de funciones macro
+  fputs("include macros2.asm",pf);
+  fputs("include number.asm",pf);
+
+  fputs("\n.MODEL	LARGE",pf);
+  fputs(".386",pf);
+  fputs(".STACK 200h",pf);
+
+  //Carga de tabla de simbolos
+  while(fgets(ts_line, 99, pf_ts) != NULL){
+    strncpy(name,ts_line,33);
+		name[32] = '\0';
+
+    strncpy(type,ts_line[34],10);
+    val[10] = '\0';
+
+    strncpy(val,ts_line[45],33);
+    val[32] = '\0';
+
+    if(strstr(type,"char")){
+      sprintf(strline,"%s %s %s,'$',3 dup (?)",name,"db",val);
+      fputs(strline,pf_ts);
+    }
+    else{
+      sprintf(strline,"%s %s %s",name,"dd",val);
+      fputs(strline,pf_ts);
+    }
+  }
+
+  fputs(".CODE",pf);
+  fputs("mov AX,@DATA",pf);
+  fputs("mov DS,AX",pf);
+  fputs("mov es,ax",pf);
 
   while(pi[p_pi_aux].elemento != NULL){
-    strcpy(elemento,pi[p_pi_aux].elemento);
-    strcpy(assem[p_assem++].elemento,pi[p_pi_aux++].elemento);
+    //Recupera el elemento actual de la PI
+    strcpy(elemento,pi[p_pi_aux++].elemento);
 
+    //Copia el elemento recuperado en la pila de assembler. Si es una constante, cargar su valor desde ts
+    if(elemento[1] == '_'){
+      fseek(pf_ts, 1, SEEK_SET);
+
+      while(fgets(ts_line, 99, pf_ts) != NULL){
+        strncpy(name,ts_line,33);
+		    name[32] = '\0';
+
+        if(strcmp(elemento, name) == 0)
+        {
+          strncpy(val,ts_line[45],33);
+          val[32] = '\0';
+
+          strcpy(assem[p_assem++].elemento,val);
+        }
+      }
+    }
+    
     //Asignacion
     if(strcmp(elemento,":=")){
       if(free){
@@ -418,9 +466,13 @@ void generar_assembler(){
     }
   }
 
-  fclose(pf);
+  //Hardcode fin de programa assembler
+  fputs("mov ax,4c00h",pf);
+  fputs("int 21h",pf);
+  fputs("End",pf);
 
-  
+  fclose(pf);
+  fclose(pf_ts);
 }
 
 //Inserta un elemento en la PI
