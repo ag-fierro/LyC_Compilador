@@ -3,6 +3,7 @@ flex Lexico.l
 bison -dyv Sintactico.y
 rm ts.txt
 rm intermedia.txt
+rm assembler.asm
 gcc lex.yy.c y.tab.c -o compilador
 ./compilador prueba.txt
 rm lex.yy.c

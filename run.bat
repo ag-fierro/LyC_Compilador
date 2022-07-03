@@ -4,6 +4,7 @@ bison -dyv Sintactico.y
 
 del ts.txt
 del intermedia.txt
+del assembler.asm
 
 gcc lex.yy.c y.tab.c -o Segunda.exe
 

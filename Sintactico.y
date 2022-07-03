@@ -126,7 +126,7 @@ void apilar_type(int);
 
 /*REGLAS*/
 
-programa_completo:  programa { /*generar_archivo_cod_inter(); */ printf("Sintactico --> FIN PARSING"); generar_assembler(); printf("Sintactico --> Compilacion OK\n");}
+programa_completo:  programa {generar_archivo_cod_inter(); printf("Sintactico --> FIN PARSING\n"); generar_assembler(); printf("Sintactico --> Compilacion OK\n");}
 
 programa: sentencia | programa sentencia; 
 
@@ -245,9 +245,11 @@ void generar_archivo_cod_inter(){
 //Genera el codigo assembler
 void generar_assembler(){
   struct t_pi assem[1000];
-  int p_assem = 0, p_pi_aux = 0, free = 1;
+  int p_assem = 0, p_pi_aux = 0, free = 1, elem_type;
   char strline[100], ts_line[100], elemento[33], name[33], val[33], type[10];
   FILE *pf, *pf_ts;
+
+  printf("Inicio generacion de Codigo Assembler\n");
 
   pf = fopen("assembler.asm", "wt");
   pf_ts = fopen("assembler.asm", "rt");
@@ -265,14 +267,14 @@ void generar_assembler(){
     strncpy(name,ts_line,33);
 		name[32] = '\0';
 
-    strncpy(type,ts_line[34],10);
-    val[10] = '\0';
+    strncpy(type,&ts_line[34],10);
+    type[10] = '\0';
 
-    strncpy(val,ts_line[45],33);
+    strncpy(val,&ts_line[45],33);
     val[32] = '\0';
 
     if(strstr(type,"char")){
-      sprintf(strline,"%s %s %s,'$',3 dup (?)",name,"db",val);
+      sprintf(strline,"%s %s %s",name,"db",val);
       fputs(strline,pf_ts);
     }
     else{
@@ -290,20 +292,35 @@ void generar_assembler(){
     //Recupera el elemento actual de la PI
     strcpy(elemento,pi[p_pi_aux++].elemento);
 
-    //Copia el elemento recuperado en la pila de assembler. Si es una constante, cargar su valor desde ts
-    if(elemento[1] == '_'){
-      fseek(pf_ts, 1, SEEK_SET);
+    //Copia el elemento recuperado en la pila de assembler. 
+    fseek(pf_ts, 1, SEEK_SET);
 
-      while(fgets(ts_line, 99, pf_ts) != NULL){
-        strncpy(name,ts_line,33);
-		    name[32] = '\0';
+    while(fgets(ts_line, 99, pf_ts) != NULL){
+      strncpy(name,ts_line,33);
+	    name[32] = '\0';
 
-        if(strcmp(elemento, name) == 0)
-        {
-          strncpy(val,ts_line[45],33);
+      if(strcmp(elemento, name) == 0)
+      {
+        //Si es una constante, cargar su valor desde ts
+        if(elemento[1] == '_'){
+          strncpy(val,&ts_line[45],33);
           val[32] = '\0';
 
           strcpy(assem[p_assem++].elemento,val);
+        }
+        else{ //Si no es constante, recupero su tipo
+          strncpy(type,ts_line,10);
+          type[10] = '\0';
+
+          if(strstr(type,"char")){
+            elem_type = CARAC;
+          }
+          else if(strstr(type,"int")){
+            elem_type = ENTERO;
+          }
+          else{
+            elem_type = FLOAT;
+          }
         }
       }
     }
@@ -421,48 +438,39 @@ void generar_assembler(){
     //Write
     if(strcmp(elemento,"WRITE_ETIQ")){
       
-      buscar_type(assem[p_assem-1]);
-
-      if ( pila_type[p_pila_type-1] == ENTERO ){
-        sprintf(strline,"DisplayInteger %s",assem[p_assem-1]);
-        fputs(strline,pf);
+      switch(elem_type){
+        case ENTERO:
+          sprintf(strline,"DisplayInteger %s",assem[p_assem-1]);
+          fputs(strline,pf);
+          break;
+        case FLOTANTE:
+          sprintf(strline,"DisplayFloat %s,2",assem[p_assem-1]);
+          fputs(strline,pf);
+          break;
+        case CARAC:
+          sprintf(strline,"displayString %s",assem[p_assem-1]);
+          fputs(strline,pf);
+          break;
       }
-
-      if ( pila_type[p_pila_type-1] == FLOTANTE ){
-        sprintf(strline,"DisplayFloat %s,2",assem[p_assem-1]);
-        fputs(strline,pf);
-      }
-
-      if ( pila_type[p_pila_type-1] == CARAC ){
-        sprintf(strline,"displayString %s",assem[p_assem-1]);
-        fputs(strline,pf);
-      }
-      
-      p_pila_type--;
     }
 
     //Read
     if(strcmp(elemento,"READ_ETIQ")){
-      
-      buscar_type(assem[p_assem-1]);
 
-      if ( pila_type[p_pila_type-1] == ENTERO ){
-        sprintf(strline,"GetInteger %s",assem[p_assem-1]);
-        fputs(strline,pf);
+      switch(elem_type){
+        case ENTERO:
+          sprintf(strline,"GetInteger %s",assem[p_assem-1]);
+          fputs(strline,pf);
+          break;
+        case FLOTANTE:
+          sprintf(strline,"GetFloat %s,2",assem[p_assem-1]);
+          fputs(strline,pf);
+          break;
+        case CARAC:
+          sprintf(strline,"getString %s",assem[p_assem-1]);
+          fputs(strline,pf);
+          break;
       }
-
-      if ( pila_type[p_pila_type-1] == FLOTANTE ){
-        sprintf(strline,"GetFloat %s,2",assem[p_assem-1]);
-        fputs(strline,pf);
-      }
-
-      if ( pila_type[p_pila_type-1] == CARAC ){
-        sprintf(strline,"getString %s",assem[p_assem-1]);
-        fputs(strline,pf);
-      }
-      
-      p_pila_type--;     
-
     }
   }
 
@@ -470,6 +478,8 @@ void generar_assembler(){
   fputs("mov ax,4c00h",pf);
   fputs("int 21h",pf);
   fputs("End",pf);
+
+  printf("Generacion de Codigo Assembler terminada -> OK\n");
 
   fclose(pf);
   fclose(pf_ts);
