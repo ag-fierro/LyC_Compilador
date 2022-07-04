@@ -245,7 +245,7 @@ void generar_archivo_cod_inter(){
 //Genera el codigo assembler
 void generar_assembler(){
   struct t_pi assem[1000];
-  int p_assem = 0, p_pi_aux = 0, free = 1, elem_type, i;
+  int p_assem = 0, p_pi_aux = 0, free = 1, elem_type, i, fetch;
   char strline[100], ts_line[100], elemento[33], name[33], val[33], type[10];
   FILE *pf, *pf_ts;
 
@@ -297,20 +297,23 @@ void generar_assembler(){
     //Copia el elemento recuperado en la pila de assembler
     fseek(pf_ts, 0, SEEK_SET);
 
-    while(fgets(ts_line, 99, pf_ts) != NULL){
+    fetch = 0;
+    while(fgets(ts_line, 99, pf_ts) != NULL && !fetch){
       strncpy(name,ts_line,33);
 	    name[32] = '\0';
 
-      if(strcmp(elemento, name) == 0)
+      if(strstr(name, elemento))
       {
         //Si es una constante, cargar su valor desde ts
-        if(elemento[1] == '_'){
+        if(elemento[0] == '_'){
           strncpy(val,&ts_line[45],33);
           val[32] = '\0';
 
-          strcpy(assem[p_assem++].elemento,val);
+          sprintf(assem[p_assem++].elemento,"%s\n",val);
         }
         else{ //Si no es constante, recupero su tipo
+          sprintf(assem[p_assem++].elemento,"%s\n",elemento);
+
           strncpy(type,&ts_line[34],10);
           type[10] = '\0';
 
@@ -324,6 +327,8 @@ void generar_assembler(){
             elem_type = FLOAT;
           }
         }
+
+        fetch = 1;
       }
     }
 
@@ -334,104 +339,114 @@ void generar_assembler(){
       if(free){
         sprintf(strline,"FLD %s",&assem[p_assem-1]);
         fputs(strline,pf);
+
+        p_assem--;
       }
 
-      sprintf(strline,"FSTP %s",&assem[p_assem-2]);
+      sprintf(strline,"FSTP %s",&assem[p_assem-1]);
       fputs(strline,pf);
 
       sprintf(strline,"FFREE\n\n");
       fputs(strline,pf);
       free = 1;
 
-      p_assem -= 2;
+      p_assem--;
     }
 
     //Suma
     if(strcmp(elemento,"+") == 0){
-      sprintf(strline,"FLD %s\n",&assem[p_assem-2]);
+      sprintf(strline,"FLD %s",&assem[p_assem-2]);
       fputs(strline,pf);
 
       if(free){
-        sprintf(strline,"FLD %s\n",&assem[p_assem-1]);
+        sprintf(strline,"FLD %s",&assem[p_assem-1]);
         fputs(strline,pf);
 
+        p_assem -= 2;
         free = 0;
       }
       else
       {
         sprintf(strline,"FXCH\n");//intercambia registro 1 y 0
+        fputs(strline,pf);
+
+        p_assem--;
       }
       
       sprintf(strline,"FADD\n");//registro 1 = 1 + 0
       fputs(strline,pf);
-
-      p_assem -= 2;
     }
 
     //Resta
     if(strcmp(elemento,"-") == 0){
-      sprintf(strline,"FLD %s\n",&assem[p_assem-2]);
+      sprintf(strline,"FLD %s",&assem[p_assem-2]);
       fputs(strline,pf);
 
       if(free){
-        sprintf(strline,"FLD %s\n",&assem[p_assem-1]);
+        sprintf(strline,"FLD %s",&assem[p_assem-1]);
         fputs(strline,pf);
 
+        p_assem -= 2;
         free = 0;
       }
       else
       {
         sprintf(strline,"FXCH\n");//intercambia registro 1 y 0
+        fputs(strline,pf);
+
+        p_assem--;
       }
       
       sprintf(strline,"FSUB\n");//registro 1 = 1 + 0
       fputs(strline,pf);
-
-      p_assem -= 2;
     }
 
     //Multiplicacion
     if(strcmp(elemento,"*") == 0){
-      sprintf(strline,"FLD %s\n",&assem[p_assem-2]);
+      sprintf(strline,"FLD %s",&assem[p_assem-2]);
       fputs(strline,pf);
 
       if(free){
-        sprintf(strline,"FLD %s\n",&assem[p_assem-1]);
+        sprintf(strline,"FLD %s",&assem[p_assem-1]);
         fputs(strline,pf);
 
+        p_assem -= 2;
         free = 0;
       }
       else
       {
         sprintf(strline,"FXCH\n");//intercambia registro 1 y 0
+        fputs(strline,pf);
+
+        p_assem--;
       }
       
       sprintf(strline,"FMUL\n");//registro 1 = 1 + 0
       fputs(strline,pf);
-
-      p_assem -= 2;
     }
 
     //Division (revisar dividido 0)
     if(strcmp(elemento,"/") == 0){
-      sprintf(strline,"FLD %s\n",&assem[p_assem-2]);
+      sprintf(strline,"FLD %s",&assem[p_assem-2]);
       fputs(strline,pf);
 
       if(free){
-        sprintf(strline,"FLD %s\n",&assem[p_assem-1]);
+        sprintf(strline,"FLD %s",&assem[p_assem-1]);
         fputs(strline,pf);
 
+        p_assem -= 2;
         free = 0;
       }
       else
       {
         sprintf(strline,"FXCH\n");//intercambia registro 1 y 0
+        fputs(strline,pf);
+
+        p_assem--;
       }
       
       sprintf(strline,"FDIV\n");//registro 1 = 1 + 0
       fputs(strline,pf);
-
-      p_assem -= 2;
     }
 
     //Comparacion
@@ -444,16 +459,28 @@ void generar_assembler(){
       
       switch(elem_type){
         case ENTERO:
-          sprintf(strline,"DisplayInteger %s\n",&assem[p_assem-1]);
+          sprintf(strline,"DisplayInteger %s",&assem[p_assem-1]);
           fputs(strline,pf);
+
+          sprintf(strline,"FFREE\n\n");
+          fputs(strline,pf);
+
           break;
         case FLOTANTE:
-          sprintf(strline,"DisplayFloat %s.2\n",&assem[p_assem-1]);
+          sprintf(strline,"DisplayFloat %s.2",&assem[p_assem-1]);
           fputs(strline,pf);
+
+          sprintf(strline,"FFREE\n\n");
+          fputs(strline,pf);
+
           break;
         case CARAC:
-          sprintf(strline,"displayString %s\n",&assem[p_assem-1]);
+          sprintf(strline,"DisplayString %s",&assem[p_assem-1]);
           fputs(strline,pf);
+
+          sprintf(strline,"FFREE\n\n");
+          fputs(strline,pf);
+
           break;
       }
     }
@@ -463,16 +490,28 @@ void generar_assembler(){
 
       switch(elem_type){
         case ENTERO:
-          sprintf(strline,"GetInteger %s\n",&assem[p_assem-1]);
+          sprintf(strline,"GetInteger %s",&assem[p_assem-1]);
           fputs(strline,pf);
+
+          sprintf(strline,"FFREE\n\n");
+          fputs(strline,pf);
+
           break;
         case FLOTANTE:
-          sprintf(strline,"GetFloat %s.2\n",&assem[p_assem-1]);
+          sprintf(strline,"GetFloat %s.2",&assem[p_assem-1]);
           fputs(strline,pf);
+
+          sprintf(strline,"FFREE\n\n");
+          fputs(strline,pf);
+
           break;
         case CARAC:
-          sprintf(strline,"getString %s\n",&assem[p_assem-1]);
+          sprintf(strline,"GetString %s",&assem[p_assem-1]);
           fputs(strline,pf);
+
+          sprintf(strline,"FFREE\n\n");
+          fputs(strline,pf);
+
           break;
       }
     }
