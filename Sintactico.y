@@ -291,13 +291,14 @@ void generar_assembler(){
   fputs("mov ES,AX\n\n",pf);
 
   for(i = 0; i < p_pi; i++){
+    fetch = 0;
+
     //Recupera el elemento actual de la PI
     strcpy(elemento,pi[p_pi_aux++].elemento);
 
     //Copia el elemento recuperado en la pila de assembler
     fseek(pf_ts, 0, SEEK_SET);
 
-    fetch = 0;
     while(fgets(ts_line, 99, pf_ts) != NULL && !fetch){
       strncpy(name,ts_line,33);
 	    name[32] = '\0';
@@ -307,7 +308,7 @@ void generar_assembler(){
         //Si es una constante, cargar su valor desde ts
         if(elemento[0] == '_'){
           strncpy(val,&ts_line[45],33);
-          val[32] = '\0';
+          val[31] = '\0'; //Resivar si hay otra solucion para esto
 
           sprintf(assem[p_assem++].elemento,"%s\n",val);
         }
@@ -355,10 +356,10 @@ void generar_assembler(){
 
     //Suma
     if(strcmp(elemento,"+") == 0){
-      sprintf(strline,"FLD %s",&assem[p_assem-2]);
-      fputs(strline,pf);
-
       if(free){
+        sprintf(strline,"FLD %s",&assem[p_assem-2]);
+        fputs(strline,pf);
+
         sprintf(strline,"FLD %s",&assem[p_assem-1]);
         fputs(strline,pf);
 
@@ -367,6 +368,9 @@ void generar_assembler(){
       }
       else
       {
+        sprintf(strline,"FLD %s",&assem[p_assem-1]);
+        fputs(strline,pf);
+
         sprintf(strline,"FXCH\n");//intercambia registro 1 y 0
         fputs(strline,pf);
 
@@ -379,10 +383,10 @@ void generar_assembler(){
 
     //Resta
     if(strcmp(elemento,"-") == 0){
-      sprintf(strline,"FLD %s",&assem[p_assem-2]);
-      fputs(strline,pf);
-
       if(free){
+        sprintf(strline,"FLD %s",&assem[p_assem-2]);
+        fputs(strline,pf);
+
         sprintf(strline,"FLD %s",&assem[p_assem-1]);
         fputs(strline,pf);
 
@@ -391,6 +395,9 @@ void generar_assembler(){
       }
       else
       {
+        sprintf(strline,"FLD %s",&assem[p_assem-1]);
+        fputs(strline,pf);
+
         sprintf(strline,"FXCH\n");//intercambia registro 1 y 0
         fputs(strline,pf);
 
@@ -403,10 +410,10 @@ void generar_assembler(){
 
     //Multiplicacion
     if(strcmp(elemento,"*") == 0){
-      sprintf(strline,"FLD %s",&assem[p_assem-2]);
-      fputs(strline,pf);
-
       if(free){
+        sprintf(strline,"FLD %s",&assem[p_assem-2]);
+        fputs(strline,pf);
+
         sprintf(strline,"FLD %s",&assem[p_assem-1]);
         fputs(strline,pf);
 
@@ -415,6 +422,9 @@ void generar_assembler(){
       }
       else
       {
+        sprintf(strline,"FLD %s",&assem[p_assem-1]);
+        fputs(strline,pf);
+
         sprintf(strline,"FXCH\n");//intercambia registro 1 y 0
         fputs(strline,pf);
 
@@ -427,10 +437,10 @@ void generar_assembler(){
 
     //Division (revisar dividido 0)
     if(strcmp(elemento,"/") == 0){
-      sprintf(strline,"FLD %s",&assem[p_assem-2]);
-      fputs(strline,pf);
-
       if(free){
+        sprintf(strline,"FLD %s",&assem[p_assem-2]);
+        fputs(strline,pf);
+
         sprintf(strline,"FLD %s",&assem[p_assem-1]);
         fputs(strline,pf);
 
@@ -439,6 +449,9 @@ void generar_assembler(){
       }
       else
       {
+        sprintf(strline,"FLD %s",&assem[p_assem-1]);
+        fputs(strline,pf);
+
         sprintf(strline,"FXCH\n");//intercambia registro 1 y 0
         fputs(strline,pf);
 
