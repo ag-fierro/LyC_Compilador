@@ -323,20 +323,20 @@ void generar_assembler(){
           sprintf(assem[p_assem++].elemento,"%s\n",val);
         }
         else{ //Si no es constante, recupero su tipo
-          sprintf(assem[p_assem++].elemento,"%s\n",elemento);
+          sprintf(assem[p_assem++].elemento,"%s\n",elemento);          
+        }
 
-          strncpy(type,&ts_line[34],10);
-          type[10] = '\0';
+        strncpy(type,&ts_line[34],10);
+        type[10] = '\0';
 
-          if(strstr(type,"char")){
-            elem_type = CARAC;
-          }
-          else if(strstr(type,"int")){
-            elem_type = ENTERO;
-          }
-          else{
-            elem_type = FLOAT;
-          }
+        if(strstr(type,"char")){
+          elem_type = CARAC;
+        }
+        else if(strstr(type,"int")){
+          elem_type = ENTERO;
+        }
+        else{
+          elem_type = FLOAT;
         }
 
         fetch = 1;
