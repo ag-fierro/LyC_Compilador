@@ -134,10 +134,6 @@ sentencia:  asignacion | iteracion | seleccion | declaracion | entrada_salida;
 
 asignacion: ID {insertar((char*)$1); buscar_type((char*)$1);} OP_ASIG expresion {insertar(":="); comparar_type(); printf("Sintactico --> ASIGNACION\n");};
 
-/*iteracion:  WHILE {cargar_simbolo_aux("@salto_if", INT, ""); insertar("@salto_if"); apilar(); insertar(":="); insertar("WHILE_ET"); sprintf(aux_salto,"%d",p_pi);}
-              PAR_A condicion PAR_C {insertar("CMP"); insertar(a_comp); insertar("@salto_if");}
-              LLA_A programa LLA_C {insertar("BI"); desapilar_insertar(2); insertar(aux_salto); printf("Sintactico --> WHILE\n");};*/
-
 iteracion:  WHILE {insertar("WHILE_ET"); sprintf(aux_salto,"%d",p_pi);}
               PAR_A condicion PAR_C {insertar("CMP"); insertar(a_comp); apilar();}
               LLA_A programa LLA_C {insertar("BI"); desapilar_insertar(2); insertar(aux_salto); printf("Sintactico --> WHILE\n");};              
@@ -145,14 +141,7 @@ iteracion:  WHILE {insertar("WHILE_ET"); sprintf(aux_salto,"%d",p_pi);}
 seleccion:  seleccion_aux {desapilar_insertar(1); printf("Sintactico --> IF\n");}
             | seleccion_aux ELSE {insertar("BI"); desapilar_insertar(2); apilar();} LLA_A programa LLA_C {desapilar_insertar(1); printf("Sintactico --> IF ELSE\n");};
 
-/*seleccion_aux:  IF {cargar_simbolo_aux("@salto_if", INT, ""); insertar("@salto_if"); apilar(); insertar(":=");}
-                  PAR_A condicion PAR_C {insertar("CMP"); insertar(a_comp); insertar("@salto_if");} LLA_A programa LLA_C;*/
-
 seleccion_aux:  IF {insertar("IF_ETIQ");} PAR_A condicion PAR_C {insertar("CMP"); insertar(a_comp); apilar();} LLA_A programa LLA_C;
-
-/*condicion:      condicion {insertar("CMP"); insertar(a_comp); insertar("@salto_if");} OP_AND comparacion {printf("Sintactico --> AND\n");}
-                | condicion {insertar("CMP"); insertar(b_comp); apilar();} OP_OR comparacion {desapilar_insertar(4); printf("Sintactico --> OR\n");}
-                | comparacion;*/
 
 condicion:      condicion {insertar("CMP"); insertar(a_comp); apilar();} OP_AND comparacion {printf("Sintactico --> AND\n");}
                 | condicion {insertar("CMP"); insertar(b_comp); apilar();} OP_OR comparacion {desapilar_insertar(4); printf("Sintactico --> OR\n");}
@@ -342,8 +331,6 @@ void generar_assembler(){
         fetch = 1;
       }
     }
-
-    //printf("elemento: %s\n",elemento);
 
     //Asignacion
     if(strcmp(elemento,":=") == 0){
