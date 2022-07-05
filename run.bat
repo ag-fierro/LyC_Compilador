@@ -6,9 +6,15 @@ del ts.txt
 del intermedia.txt
 del assembler.asm
 
-gcc lex.yy.c y.tab.c -o Segunda.exe
+gcc lex.yy.c y.tab.c -o Compilador.exe
 
-Segunda.exe prueba.txt
+Compilador.exe prueba.txt
+
+PATH=C:\TASM;
+tasm numbers.asm
+tasm assembler.asm
+tlink assembler.obj numbers.obj
+assembler.exe
 
 @echo off
 

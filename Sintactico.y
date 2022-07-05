@@ -29,6 +29,7 @@ char aux_salto[5];
 int pila_pos_pi[10];
 int pila_type[50];
 
+int cant_in = 0;
 int yystopparser = 0;
 int p_pi = 0;
 int p_pila_pos_pi = -1;
@@ -147,8 +148,8 @@ condicion:      condicion {insertar("CMP"); insertar(a_comp); apilar();} OP_AND 
                 | condicion {insertar("CMP"); insertar(b_comp); apilar();} OP_OR comparacion {desapilar_insertar(4); printf("Sintactico --> OR\n");}
                 | comparacion;
 
-comparacion:    expresion comparador expresion {comparar_type();}
-                | expresion_INLIST {strcpy(a_comp,"BNE"); strcpy(b_comp,"BEQ");};
+comparacion:  expresion comparador expresion {comparar_type();}
+              | expresion_INLIST {strcpy(a_comp,"BNE"); strcpy(b_comp,"BEQ");};
 
 comparador:     OP_MAIG   {strcpy(a_comp,"BLT"); strcpy(b_comp,"BGE");}
                 | OP_MAY  {strcpy(a_comp,"BLE"); strcpy(b_comp,"BGT");}
@@ -180,16 +181,14 @@ expresion_AVG:        AVG {cont_avg=0; } PAR_A COR_A lista_expresion_avg COR_C P
 lista_expresion_avg:  lista_expresion_avg CHAR_COMA expresion {insertar("+"); evaluar_type(); cont_avg++;}
                       | expresion {cont_avg++;};
 
-expresion_INLIST: INLIST {cargar_simbolo_aux("@salto_in", INT, ""); insertar("@salto_in"); apilar(); insertar(":="); cargar_simbolo_aux("@aux_inlist", FLOAT, ""); apilar_type(FLOTANTE); 
-                    insertar("@aux_inlist");} PAR_A id_aux_inlist {insertar(":="); comparar_type(); apilar_type(FLOTANTE); insertar("@aux_inlisted");} CHAR_PUNCO 
-                    COR_A lista_expresion_inlist COR_C PAR_C {desapilar_insertar(1); insertar("@aux_inlist"); insertar("@aux_inlisted"); strcpy(a_comp,"BNE"); 
-                    strcpy(b_comp,"BEQ"); printf("Sintactico --> INLIST\n");};
+expresion_INLIST: INLIST {cargar_simbolo_aux("@aux_inlist", FLOAT, ""); apilar_type(FLOTANTE); insertar("@aux_inlist");} PAR_A id_aux_inlist {insertar(":="); comparar_type();
+                    apilar_type(FLOTANTE); insertar("@aux_inlisted");} CHAR_PUNCO COR_A lista_expresion_inlist COR_C PAR_C {while(cant_in != 0){desapilar_insertar(1); cant_in--;} 
+                    insertar("@aux_inlist"); insertar("@aux_inlisted"); strcpy(a_comp,"BNE"); strcpy(b_comp,"BEQ"); printf("Sintactico --> INLIST\n");};
 
 lista_expresion_inlist: lista_expresion_inlist CHAR_PUNCO {cargar_simbolo_aux("@aux_inlisted", FLOAT, ""); apilar_type(FLOTANTE); insertar("@aux_inlisted");} expresion 
-                          {insertar(":="); comparar_type(); insertar("@aux_inlist"); insertar("@aux_inlisted"); insertar("CMP"); insertar("BEQ"); insertar("@salto_in"); 
-                          printf("Sintactico --> AVG\n");}
+                          {insertar(":="); comparar_type(); insertar("@aux_inlist"); insertar("@aux_inlisted"); insertar("CMP"); insertar("BEQ"); apilar(); cant_in++;}
                         | expresion {insertar(":="); comparar_type(); insertar("@aux_inlist"); insertar("@aux_inlisted"); insertar("CMP"); insertar("BEQ");
-                          insertar("@salto_in"); printf("Sintactico --> AVG\n");};
+                          apilar(); cant_in++;};
 
 id_aux_inlist: ID {insertar((char*)$1); buscar_type((char*)$1);};
 
@@ -349,6 +348,8 @@ void generar_assembler(){
       free = 1;
 
       p_assem--;
+
+      continue;
     }
 
     //Suma
@@ -376,6 +377,8 @@ void generar_assembler(){
       
       sprintf(strline,"FADD\n");//registro 1 = 1 + 0
       fputs(strline,pf);
+
+      continue;
     }
 
     //Resta
@@ -403,6 +406,8 @@ void generar_assembler(){
       
       sprintf(strline,"FSUB\n");//registro 1 = 1 + 0
       fputs(strline,pf);
+
+      continue;
     }
 
     //Multiplicacion
@@ -430,6 +435,8 @@ void generar_assembler(){
       
       sprintf(strline,"FMUL\n");//registro 1 = 1 + 0
       fputs(strline,pf);
+
+      continue;
     }
 
     //Division (revisar dividido 0)
@@ -457,11 +464,14 @@ void generar_assembler(){
       
       sprintf(strline,"FDIV\n");//registro 1 = 1 + 0
       fputs(strline,pf);
+
+      continue;
     }
 
     //Comparacion
     if(strcmp(elemento,"CMP") == 0){
-      //
+      fputs("//Aca va una condicion\n",pf);
+      continue;
     }
 
     //Write
@@ -493,6 +503,8 @@ void generar_assembler(){
 
           break;
       }
+
+      continue;
     }
 
     //Read
@@ -524,6 +536,8 @@ void generar_assembler(){
 
           break;
       }
+
+      continue;
     }
   }
 
