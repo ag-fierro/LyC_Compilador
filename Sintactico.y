@@ -17,9 +17,16 @@ struct t_pi{
   char elemento[33];
 };
 
+struct t_etiq{
+  int pi_pos;
+  int num_etiq;
+};
+
 FILE  *yyin;
 
 struct t_pi pi[1000];
+struct t_pi assem[1000];
+struct t_etiq etiq[100];
 
 char a_comp[3];
 char b_comp[3];
@@ -29,6 +36,9 @@ char aux_salto[5];
 int pila_pos_pi[10];
 int pila_type[50];
 
+int p_etiq = -1;
+int p_assem = 0;
+int p_pi_aux = 0;
 int cant_in = 0;
 int yystopparser = 0;
 int p_pi = 0;
@@ -42,6 +52,8 @@ int yylex();
 
 void generar_archivo_cod_inter();
 void generar_assembler();
+void get_param_op(int*, FILE**);
+int get_read_write_type(char*);
 void insertar(char*);
 void apilar();
 void desapilar_insertar(int);
@@ -242,15 +254,13 @@ void generar_archivo_cod_inter(){
 
 //Genera el codigo assembler
 void generar_assembler(){
-  struct t_pi assem[1000];
-  int p_assem = 0, p_pi_aux = 0, free = 1, elem_type, i, fetch;
-  char strline[100], ts_line[100], elemento[33], name[33], val[33], type[10];
+  int cont_etiq = 0, free = 1, elem_type, i, fetch;
+  char strline[100], ts_line[100], elemento[33], name[33], val[33], type[10], t_jump[4];
   FILE *pf, *pf_ts;
 
   printf("Inicio generacion de Codigo Assembler\n");
 
   pf = fopen("assembler.asm", "wt");
-  pf_ts = fopen("ts.txt", "rt");
 
   //Agregando Headers y include de funciones macro
   fputs("include macros2.asm\n",pf);
@@ -261,27 +271,35 @@ void generar_assembler(){
   fputs(".STACK 200h\n\n",pf);
 
   //Carga de tabla de simbolos
+  pf_ts = fopen("ts.txt", "rt");
+
   fgets(ts_line, 99, pf_ts); //Salteo cabecera
 
   while(fgets(ts_line, 99, pf_ts) != NULL){
     strncpy(name,ts_line,33);
 		name[32] = '\0';
 
-    if(name[0] != '_'){
-      strncpy(type,&ts_line[34],10);
-      type[10] = '\0';
+    strncpy(type,&ts_line[34],10);
+    type[10] = '\0';
 
+    if(name[0] == '_'){
       strncpy(val,&ts_line[45],33);
       val[32] = '\0';
-
-      if(strstr(type,"char"))
-        sprintf(strline,"%s %s %s\n",name,"db",val);
-      else
-        sprintf(strline,"%s %s %s\n",name,"dd",val);
-
-      fputs(strline,pf);
     }
+    else
+    {
+      strcpy(val,"??");
+    }
+
+    if(strstr(type,"char"))
+      sprintf(strline,"%s %s %s\n",name,"db",val);
+    else
+      sprintf(strline,"%s %s %s\n",name,"dd",val);
+
+    fputs(strline,pf);
   }
+
+  fclose(pf_ts);
 
   fputs("\n.CODE\n",pf);
   fputs("mov AX,@DATA\n",pf);
@@ -289,47 +307,21 @@ void generar_assembler(){
   fputs("mov ES,AX\n\n",pf);
 
   for(i = 0; i < p_pi; i++){
-    fetch = 0;
-
     //Recupera el elemento actual de la PI
-    strcpy(elemento,pi[p_pi_aux++].elemento);
+    strcpy(elemento,pi[p_pi_aux].elemento);
+    sprintf(assem[++p_assem].elemento,"%s\n",elemento);
+  
+    /*
+    //Coloca la etiqueta de salto en caso de llegar a la posicion correspondiente
+    if(p_etiq >= 0 && etiq[p_etiq].pi_pos == p_pi_aux){
+      sprintf(strline,"if_etiq%d\n",etiq[p_etiq].num_etiq);
+      fputs(strline,pf);
 
-    //Copia el elemento recuperado en la pila de assembler
-    fseek(pf_ts, 0, SEEK_SET);
-
-    while(fgets(ts_line, 99, pf_ts) != NULL && !fetch){
-      strncpy(name,ts_line,33);
-	    name[32] = '\0';
-
-      if(strstr(name, elemento))
-      {
-        //Si es una constante, cargar su valor desde ts
-        if(elemento[0] == '_'){
-          strncpy(val,&ts_line[45],33);
-          val[31] = '\0'; //Resivar si hay otra solucion para esto
-
-          sprintf(assem[p_assem++].elemento,"%s\n",val);
-        }
-        else{ //Si no es constante, recupero su tipo
-          sprintf(assem[p_assem++].elemento,"%s\n",elemento);          
-        }
-
-        strncpy(type,&ts_line[34],10);
-        type[10] = '\0';
-
-        if(strstr(type,"char")){
-          elem_type = CARAC;
-        }
-        else if(strstr(type,"int")){
-          elem_type = ENTERO;
-        }
-        else{
-          elem_type = FLOAT;
-        }
-
-        fetch = 1;
-      }
+      etiq[p_etiq--].pi_pos == 0;
     }
+    */
+
+    p_pi_aux++;
 
     //Asignacion
     if(strcmp(elemento,":=") == 0){
@@ -347,33 +339,14 @@ void generar_assembler(){
       fputs(strline,pf);
       free = 1;
 
-      p_assem--;
+      p_assem -= 2;
 
       continue;
     }
 
     //Suma
     if(strcmp(elemento,"+") == 0){
-      if(free){
-        sprintf(strline,"FLD %s",&assem[p_assem-2]);
-        fputs(strline,pf);
-
-        sprintf(strline,"FLD %s",&assem[p_assem-1]);
-        fputs(strline,pf);
-
-        p_assem -= 2;
-        free = 0;
-      }
-      else
-      {
-        sprintf(strline,"FLD %s",&assem[p_assem-1]);
-        fputs(strline,pf);
-
-        sprintf(strline,"FXCH\n");//intercambia registro 1 y 0
-        fputs(strline,pf);
-
-        p_assem--;
-      }
+      get_param_op(&free, &pf);
       
       sprintf(strline,"FADD\n");//registro 1 = 1 + 0
       fputs(strline,pf);
@@ -383,26 +356,7 @@ void generar_assembler(){
 
     //Resta
     if(strcmp(elemento,"-") == 0){
-      if(free){
-        sprintf(strline,"FLD %s",&assem[p_assem-2]);
-        fputs(strline,pf);
-
-        sprintf(strline,"FLD %s",&assem[p_assem-1]);
-        fputs(strline,pf);
-
-        p_assem -= 2;
-        free = 0;
-      }
-      else
-      {
-        sprintf(strline,"FLD %s",&assem[p_assem-1]);
-        fputs(strline,pf);
-
-        sprintf(strline,"FXCH\n");//intercambia registro 1 y 0
-        fputs(strline,pf);
-
-        p_assem--;
-      }
+      get_param_op(&free, &pf);
       
       sprintf(strline,"FSUB\n");//registro 1 = 1 + 0
       fputs(strline,pf);
@@ -412,26 +366,7 @@ void generar_assembler(){
 
     //Multiplicacion
     if(strcmp(elemento,"*") == 0){
-      if(free){
-        sprintf(strline,"FLD %s",&assem[p_assem-2]);
-        fputs(strline,pf);
-
-        sprintf(strline,"FLD %s",&assem[p_assem-1]);
-        fputs(strline,pf);
-
-        p_assem -= 2;
-        free = 0;
-      }
-      else
-      {
-        sprintf(strline,"FLD %s",&assem[p_assem-1]);
-        fputs(strline,pf);
-
-        sprintf(strline,"FXCH\n");//intercambia registro 1 y 0
-        fputs(strline,pf);
-
-        p_assem--;
-      }
+      get_param_op(&free, &pf);
       
       sprintf(strline,"FMUL\n");//registro 1 = 1 + 0
       fputs(strline,pf);
@@ -441,26 +376,7 @@ void generar_assembler(){
 
     //Division (revisar dividido 0)
     if(strcmp(elemento,"/") == 0){
-      if(free){
-        sprintf(strline,"FLD %s",&assem[p_assem-2]);
-        fputs(strline,pf);
-
-        sprintf(strline,"FLD %s",&assem[p_assem-1]);
-        fputs(strline,pf);
-
-        p_assem -= 2;
-        free = 0;
-      }
-      else
-      {
-        sprintf(strline,"FLD %s",&assem[p_assem-1]);
-        fputs(strline,pf);
-
-        sprintf(strline,"FXCH\n");//intercambia registro 1 y 0
-        fputs(strline,pf);
-
-        p_assem--;
-      }
+      get_param_op(&free, &pf);
       
       sprintf(strline,"FDIV\n");//registro 1 = 1 + 0
       fputs(strline,pf);
@@ -470,16 +386,67 @@ void generar_assembler(){
 
     //Comparacion
     if(strcmp(elemento,"CMP") == 0){
-      fputs("//Aca va una condicion\n",pf);
+      /*
+      sprintf(strline,"FLD %s",&assem[p_assem-2]);
+      fputs(strline,pf);
+
+      sprintf(strline,"FCOMP %s",&assem[p_assem-1]);
+      fputs(strline,pf);
+
+      p_assem -= 3;
+
+      fputs("FSTSW AX\n",pf);
+      fputs("SAHF\n",pf);
+
+      strcpy(elemento,pi[p_pi_aux++].elemento);
+
+      t_jump[0] = 'J';
+      
+      if(strcmp(elemento+1,"EQ") == 0){
+        t_jump[1] = 'E'; t_jump[2] = '\0';
+      }
+      else if(strcmp(elemento+1,"NE") == 0){
+        t_jump[1] = 'N'; t_jump[2] = 'E'; t_jump[3] = '\0';
+      }
+      else if(strcmp(elemento+1,"GT") == 0){
+        t_jump[1] = 'G'; t_jump[2] = '\0';
+      }
+      else if(strcmp(elemento+1,"GE") == 0){
+        t_jump[1] = 'G'; t_jump[2] = 'E'; t_jump[3] = '\0';
+      }
+      else if(strcmp(elemento+1,"LT") == 0){
+        t_jump[1] = 'L'; t_jump[2] = '\0';
+      }
+      else{
+        t_jump[1] = 'L'; t_jump[2] = 'E'; t_jump[1] = '\0';
+      }
+
+      //Genera etiqueta de salto
+      strcpy(elemento,pi[p_pi_aux++].elemento);
+
+      printf("p_etiq: %d\n",p_etiq);
+      printf("pos_salto_ant: %d",etiq[p_etiq-1].pi_pos);
+      printf(" pos_salto: %d\n",atoi(elemento));
+
+      if(p_etiq == -1 || (p_etiq >= 0 && etiq[p_etiq].pi_pos != atoi(elemento))){
+        etiq[++p_etiq].pi_pos = atoi(elemento);
+        etiq[p_etiq].num_etiq = ++cont_etiq;
+      }
+
+      sprintf(strline,"%s %s%d\n",t_jump,"if_etiq",cont_etiq);
+      fputs(strline,pf);
+      */
+      fputs("Condicion\n",pf);
       continue;
     }
 
     //Write
     if(strcmp(elemento,"WRITE_ETIQ") == 0){
+      elem_type = get_read_write_type(elemento);
       
       switch(elem_type){
         case ENTERO:
-          sprintf(strline,"DisplayInteger %s",&assem[p_assem-1]);
+          sprintf(strline,"DisplayInteger %s\n",elemento);
           fputs(strline,pf);
 
           sprintf(strline,"FFREE\n\n");
@@ -487,7 +454,7 @@ void generar_assembler(){
 
           break;
         case FLOTANTE:
-          sprintf(strline,"DisplayFloat %s.2",&assem[p_assem-1]);
+          sprintf(strline,"DisplayFloat %s.2\n",elemento);
           fputs(strline,pf);
 
           sprintf(strline,"FFREE\n\n");
@@ -495,7 +462,7 @@ void generar_assembler(){
 
           break;
         case CARAC:
-          sprintf(strline,"DisplayString %s",&assem[p_assem-1]);
+          sprintf(strline,"DisplayString %s\n",elemento);
           fputs(strline,pf);
 
           sprintf(strline,"FFREE\n\n");
@@ -509,10 +476,11 @@ void generar_assembler(){
 
     //Read
     if(strcmp(elemento,"READ_ETIQ") == 0){
+      elem_type = get_read_write_type(elemento);
 
       switch(elem_type){
         case ENTERO:
-          sprintf(strline,"GetInteger %s",&assem[p_assem-1]);
+          sprintf(strline,"GetInteger %s\n",elemento);
           fputs(strline,pf);
 
           sprintf(strline,"FFREE\n\n");
@@ -520,7 +488,7 @@ void generar_assembler(){
 
           break;
         case FLOTANTE:
-          sprintf(strline,"GetFloat %s.2",&assem[p_assem-1]);
+          sprintf(strline,"GetFloat %s.2\n",elemento);
           fputs(strline,pf);
 
           sprintf(strline,"FFREE\n\n");
@@ -528,7 +496,7 @@ void generar_assembler(){
 
           break;
         case CARAC:
-          sprintf(strline,"GetString %s",&assem[p_assem-1]);
+          sprintf(strline,"GetString %s\n",elemento);
           fputs(strline,pf);
 
           sprintf(strline,"FFREE\n\n");
@@ -550,6 +518,65 @@ void generar_assembler(){
 
   fclose(pf);
   fclose(pf_ts);
+}
+
+//Escribe carga de parametros para las operaciones del .asm
+void get_param_op(int* free, FILE** pf){
+  char strline[100];
+
+  if(*free){
+    sprintf(strline,"FLD %s",&assem[p_assem-2]);
+    fputs(strline,*pf);
+
+    sprintf(strline,"FLD %s",&assem[p_assem-1]);
+    fputs(strline,*pf);
+
+    p_assem -= 3;
+    *free = 0;
+  }
+  else
+  {
+    sprintf(strline,"FLD %s",&assem[p_assem-1]);
+    fputs(strline,*pf);
+
+    sprintf(strline,"FXCH\n");//intercambia registro 1 y 0
+    fputs(strline,*pf);
+
+    p_assem -= 2;
+  }
+}
+
+//Obtiene el tipo a mostrar o escribir para .asm
+int get_read_write_type(char* elemento){
+  FILE* pf = fopen("ts.txt", "rt");
+  char ts_line[100], name[33], type[10];
+  int elem_type = 0;
+
+  strcpy(elemento,pi[p_pi_aux++].elemento);
+
+  while(fgets(ts_line, 99, pf) != NULL && !elem_type){
+    strncpy(name,ts_line,33);
+	  name[32] = '\0';
+
+    if(strstr(name, elemento))
+    {
+      strncpy(type,ts_line+34,10);
+      type[10] = '\0';
+
+      if(strstr(type,"char")){
+        elem_type = CARAC;
+      }
+      else if(strstr(type,"int")){
+        elem_type = ENTERO;
+      }
+      else{
+        elem_type = FLOAT;
+      }
+    }
+  }
+  fclose(pf);
+
+  return elem_type;
 }
 
 //Inserta un elemento en la PI
