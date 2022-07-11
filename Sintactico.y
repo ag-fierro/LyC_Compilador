@@ -485,7 +485,7 @@ void generar_assembler(){
           etiq[++p_etiq].pi_pos = atoi(elemento);
           etiq[p_etiq].num_etiq = cont_if_in++;
 
-          sprintf(strline,"%s %s%d\n",t_jump,"etiq",etiq[p_etiq].num_etiq);
+          sprintf(strline,"%s %s%d\n",t_jump,"ETIQ",etiq[p_etiq].num_etiq);
         }
       }
         
