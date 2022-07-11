@@ -254,7 +254,7 @@ void generar_archivo_cod_inter(){
 
 //Genera el codigo assembler
 void generar_assembler(){
-  int cont_if_in = 0, cont_while = 0, free = 1, elem_type, i, j, fetch, aux_t_etiq[10], p_aux_t_etiq = -1;
+  int cont_if_in = 1, cont_while = 0, free = 1, elem_type, i, j, fetch, aux_t_etiq[10], p_aux_t_etiq = -1;
   char strline[100], ts_line[100], elemento[33], name[33], val[33], type[10], t_jump[4];
   FILE *pf, *pf_ts;
 
@@ -314,7 +314,7 @@ void generar_assembler(){
     //Coloca la etiqueta de salto en caso de llegar a la posicion correspondiente
     for(j = 0; j <= p_etiq; j++){ 
       if(etiq[j].pi_pos == p_pi_aux+1 && aux_t_etiq[p_aux_t_etiq] != 1){
-        sprintf(strline,"etiq%d\n",etiq[j].num_etiq);
+        sprintf(strline,"ETIQ%d\n\n",etiq[j].num_etiq);
         fputs(strline,pf);
 
         etiq[j].pi_pos == -1;
@@ -394,7 +394,7 @@ void generar_assembler(){
       etiq[++p_etiq].pi_pos = -1;
       etiq[p_etiq].num_etiq = ++cont_while;
 
-      sprintf(strline,"%s %s%d\n",t_jump,"etiq_w",etiq[p_etiq].num_etiq);
+      sprintf(strline,"%s %s%d\n",t_jump,"ETIQ_W",etiq[p_etiq].num_etiq);
       fputs(strline,pf);
 
       continue;
@@ -456,7 +456,7 @@ void generar_assembler(){
       //printf("type_con num %d: %d\n",p_aux_t_etiq,aux_t_etiq[p_aux_t_etiq]);
 
       if(aux_t_etiq[p_aux_t_etiq] == 1){ //WHILE
-        sprintf(strline,"%s %s%d\n",t_jump,"etiq_w",etiq[p_etiq--].num_etiq);
+        sprintf(strline,"%s %s%d\n\n",t_jump,"ETIQ_W",etiq[p_etiq--].num_etiq);
         p_aux_t_etiq--;
       }
       else{ //IF o INLIST
@@ -477,7 +477,7 @@ void generar_assembler(){
           fetch = 0;
         }
 
-        sprintf(strline,"%s %s%d\n",t_jump,"etiq",etiq[p_etiq].num_etiq);
+        sprintf(strline,"%s %s%d\n",t_jump,"ETIQ",etiq[p_etiq].num_etiq);
       }
 
       for(j = 0; j <= p_etiq; j++){
