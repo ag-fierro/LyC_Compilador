@@ -193,7 +193,7 @@ expresion_AVG:        AVG {cont_avg=0; } PAR_A COR_A lista_expresion_avg COR_C P
 lista_expresion_avg:  lista_expresion_avg CHAR_COMA expresion {insertar("+"); evaluar_type(); cont_avg++;}
                       | expresion {cont_avg++;};
 
-expresion_INLIST: INLIST {cargar_simbolo_aux("@aux_inlist", FLOAT, ""); apilar_type(FLOTANTE); insertar("@aux_inlist");} PAR_A id_aux_inlist {insertar(":="); comparar_type();
+expresion_INLIST: INLIST {insertar("IN_ETIQ"); cargar_simbolo_aux("@aux_inlist", FLOAT, ""); apilar_type(FLOTANTE); insertar("@aux_inlist");} PAR_A id_aux_inlist {insertar(":="); comparar_type();
                     apilar_type(FLOTANTE); insertar("@aux_inlisted");} CHAR_PUNCO COR_A lista_expresion_inlist COR_C PAR_C {while(cant_in != 0){desapilar_insertar(1); cant_in--;} 
                     insertar("@aux_inlist"); insertar("@aux_inlisted"); strcpy(a_comp,"BNE"); strcpy(b_comp,"BEQ"); printf("Sintactico --> INLIST\n");};
 
@@ -254,7 +254,7 @@ void generar_archivo_cod_inter(){
 
 //Genera el codigo assembler
 void generar_assembler(){
-  int cont_etiq = 0, free = 1, elem_type, i, fetch;
+  int cont_if_in = 0, cont_while = 0, free = 1, elem_type, i, j, fetch, aux_t_etiq[10], p_aux_t_etiq = -1;
   char strline[100], ts_line[100], elemento[33], name[33], val[33], type[10], t_jump[4];
   FILE *pf, *pf_ts;
 
@@ -311,15 +311,18 @@ void generar_assembler(){
     strcpy(elemento,pi[p_pi_aux].elemento);
     sprintf(assem[++p_assem].elemento,"%s\n",elemento);
   
-    /*
     //Coloca la etiqueta de salto en caso de llegar a la posicion correspondiente
-    if(p_etiq >= 0 && etiq[p_etiq].pi_pos == p_pi_aux){
-      sprintf(strline,"if_etiq%d\n",etiq[p_etiq].num_etiq);
-      fputs(strline,pf);
+    for(j = 0; j <= p_etiq; j++){ 
+      if(etiq[j].pi_pos == p_pi_aux+1 && aux_t_etiq[p_aux_t_etiq] != 1){
+        sprintf(strline,"etiq%d\n",etiq[j].num_etiq);
+        fputs(strline,pf);
 
-      etiq[p_etiq--].pi_pos == 0;
+        etiq[j].pi_pos == -1;
+        p_aux_t_etiq--;
+
+        continue;
+      }
     }
-    */
 
     p_pi_aux++;
 
@@ -384,9 +387,35 @@ void generar_assembler(){
       continue;
     }
 
+    //WHILE
+    if(strcmp(elemento,"WHILE_ET") == 0){
+      aux_t_etiq[++p_aux_t_etiq] = 1;
+      
+      etiq[++p_etiq].pi_pos = -1;
+      etiq[p_etiq].num_etiq = ++cont_while;
+
+      sprintf(strline,"%s %s%d\n",t_jump,"etiq_w",etiq[p_etiq].num_etiq);
+      fputs(strline,pf);
+
+      continue;
+    }
+
+    //INLIST
+    if(strcmp(elemento,"IN_ETIQ") == 0){
+      aux_t_etiq[++p_aux_t_etiq] = 2;
+
+      continue;
+    }
+
+    //IF
+    if(strcmp(elemento,"IF_ETIQ") == 0){
+      aux_t_etiq[++p_aux_t_etiq] = 3;
+
+      continue;
+    }
+
     //Comparacion
     if(strcmp(elemento,"CMP") == 0){
-      /*
       sprintf(strline,"FLD %s",&assem[p_assem-2]);
       fputs(strline,pf);
 
@@ -424,19 +453,44 @@ void generar_assembler(){
       //Genera etiqueta de salto
       strcpy(elemento,pi[p_pi_aux++].elemento);
 
-      printf("p_etiq: %d\n",p_etiq);
-      printf("pos_salto_ant: %d",etiq[p_etiq-1].pi_pos);
-      printf(" pos_salto: %d\n",atoi(elemento));
+      //printf("type_con num %d: %d\n",p_aux_t_etiq,aux_t_etiq[p_aux_t_etiq]);
 
-      if(p_etiq == -1 || (p_etiq >= 0 && etiq[p_etiq].pi_pos != atoi(elemento))){
-        etiq[++p_etiq].pi_pos = atoi(elemento);
-        etiq[p_etiq].num_etiq = ++cont_etiq;
+      if(aux_t_etiq[p_aux_t_etiq] == 1){ //WHILE
+        sprintf(strline,"%s %s%d\n",t_jump,"etiq_w",etiq[p_etiq--].num_etiq);
+        p_aux_t_etiq--;
+      }
+      else{ //IF o INLIST
+        fetch = 0;
+
+        for(j = 0; j <= p_etiq; j++){
+          if(etiq[j].pi_pos == atoi(elemento)){
+            fetch = 1;
+
+            continue;
+          }         
+        }
+
+        if(!fetch){
+          etiq[++p_etiq].pi_pos = atoi(elemento);
+          etiq[p_etiq].num_etiq = cont_if_in++;
+
+          fetch = 0;
+        }
+
+        sprintf(strline,"%s %s%d\n",t_jump,"etiq",etiq[p_etiq].num_etiq);
       }
 
-      sprintf(strline,"%s %s%d\n",t_jump,"if_etiq",cont_etiq);
+      for(j = 0; j <= p_etiq; j++){
+        if(p_etiq >= 0 && etiq[p_etiq].pi_pos != atoi(elemento)){
+          etiq[++p_etiq].pi_pos = atoi(elemento);
+          etiq[p_etiq].num_etiq = cont_if_in++;
+
+          sprintf(strline,"%s %s%d\n",t_jump,"etiq",etiq[p_etiq].num_etiq);
+        }
+      }
+        
       fputs(strline,pf);
-      */
-      fputs("Condicion\n",pf);
+
       continue;
     }
 
