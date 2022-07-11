@@ -149,7 +149,7 @@ asignacion: ID {insertar((char*)$1); buscar_type((char*)$1);} OP_ASIG expresion 
 
 iteracion:  WHILE {insertar("WHILE_ET"); sprintf(aux_salto,"%d",p_pi);}
               PAR_A condicion PAR_C {insertar("CMP"); insertar(a_comp); apilar();}
-              LLA_A programa LLA_C {insertar("BI"); desapilar_insertar(2); insertar(aux_salto); printf("Sintactico --> WHILE\n");};              
+              LLA_A programa LLA_C {insertar("BI"); desapilar_insertar(2); insertar(aux_salto); insertar("WHILE_END"); printf("Sintactico --> WHILE\n");};              
 
 seleccion:  seleccion_aux {desapilar_insertar(1); printf("Sintactico --> IF\n");}
             | seleccion_aux ELSE {insertar("BI"); desapilar_insertar(2); apilar();} LLA_A programa LLA_C {desapilar_insertar(1); printf("Sintactico --> IF ELSE\n");};
@@ -254,7 +254,7 @@ void generar_archivo_cod_inter(){
 
 //Genera el codigo assembler
 void generar_assembler(){
-  int cont_if_in = 1, cont_while = 0, free = 1, elem_type, i, j, fetch, aux_t_etiq[10], p_aux_t_etiq = -1;
+  int cont_if_in = 1, cont_while = 0, free = 1, elem_type, i, j, fetch, aux_t_etiq[10], p_aux_t_etiq = -1, aux_t_etiq_w[10], p_aux_t_etiq_w = -1;
   char strline[100], ts_line[100], elemento[33], name[33], val[33], type[10], t_jump[4];
   FILE *pf, *pf_ts;
 
@@ -313,7 +313,7 @@ void generar_assembler(){
   
     //Coloca la etiqueta de salto en caso de llegar a la posicion correspondiente
     for(j = 0; j <= p_etiq; j++){ 
-      if(etiq[j].pi_pos == p_pi_aux+1 && aux_t_etiq[p_aux_t_etiq] != 1){
+      if(etiq[j].pi_pos == p_pi_aux+1){
         sprintf(strline,"ETIQ%d\n\n",etiq[j].num_etiq);
         fputs(strline,pf);
 
@@ -388,28 +388,20 @@ void generar_assembler(){
     }
 
     //WHILE
-    if(strcmp(elemento,"WHILE_ET") == 0){
-      aux_t_etiq[++p_aux_t_etiq] = 1;
-      
-      etiq[++p_etiq].pi_pos = -1;
-      etiq[p_etiq].num_etiq = ++cont_while;
+    if(strcmp(elemento,"WHILE_ET") == 0){      
+      aux_t_etiq_w[++p_aux_t_etiq_w] = ++cont_while;
 
-      sprintf(strline,"%s %s%d\n",t_jump,"ETIQ_W",etiq[p_etiq].num_etiq);
+      sprintf(strline,"%s%d\n","ETIQ_W",cont_while);
       fputs(strline,pf);
 
       continue;
     }
 
-    //INLIST
-    if(strcmp(elemento,"IN_ETIQ") == 0){
-      aux_t_etiq[++p_aux_t_etiq] = 2;
-
-      continue;
-    }
-
-    //IF
-    if(strcmp(elemento,"IF_ETIQ") == 0){
-      aux_t_etiq[++p_aux_t_etiq] = 3;
+    //WHILE
+    if(strcmp(elemento,"WHILE_END") == 0){
+      sprintf(strline,"%s%d\n\n","JMP ETIQ_W",aux_t_etiq_w[p_aux_t_etiq_w--]);
+      fputs(strline,pf);
+      p_aux_t_etiq--;
 
       continue;
     }
@@ -455,30 +447,24 @@ void generar_assembler(){
 
       //printf("type_con num %d: %d\n",p_aux_t_etiq,aux_t_etiq[p_aux_t_etiq]);
 
-      if(aux_t_etiq[p_aux_t_etiq] == 1){ //WHILE
-        sprintf(strline,"%s %s%d\n\n",t_jump,"ETIQ_W",etiq[p_etiq--].num_etiq);
-        p_aux_t_etiq--;
+      fetch = 0;
+
+      for(j = 0; j <= p_etiq; j++){
+        if(etiq[j].pi_pos == atoi(elemento)){
+          fetch = 1;
+
+          continue;
+        }         
       }
-      else{ //IF o INLIST
+
+      if(!fetch){
+        etiq[++p_etiq].pi_pos = atoi(elemento);
+        etiq[p_etiq].num_etiq = cont_if_in++;
+
         fetch = 0;
-
-        for(j = 0; j <= p_etiq; j++){
-          if(etiq[j].pi_pos == atoi(elemento)){
-            fetch = 1;
-
-            continue;
-          }         
-        }
-
-        if(!fetch){
-          etiq[++p_etiq].pi_pos = atoi(elemento);
-          etiq[p_etiq].num_etiq = cont_if_in++;
-
-          fetch = 0;
-        }
-
-        sprintf(strline,"%s %s%d\n",t_jump,"ETIQ",etiq[p_etiq].num_etiq);
       }
+
+      sprintf(strline,"%s %s%d\n",t_jump,"ETIQ",etiq[p_etiq].num_etiq);   
 
       for(j = 0; j <= p_etiq; j++){
         if(p_etiq >= 0 && etiq[p_etiq].pi_pos != atoi(elemento)){
