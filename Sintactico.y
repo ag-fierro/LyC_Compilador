@@ -260,7 +260,7 @@ void generar_assembler(){
 
   printf("Inicio generacion de Codigo Assembler\n");
 
-  pf = fopen("assembler.asm", "wt");
+  pf = fopen("final.asm", "wt");
 
   //Agregando Headers y include de funciones macro
   fputs("include macros2.asm\n",pf);
@@ -269,6 +269,8 @@ void generar_assembler(){
   fputs("\n.MODEL LARGE\n",pf);
   fputs(".386\n",pf);
   fputs(".STACK 200h\n\n",pf);
+
+  fputs(".DATA\n\n",pf);
 
   //Carga de tabla de simbolos
   pf_ts = fopen("ts.txt", "rt");
@@ -281,18 +283,21 @@ void generar_assembler(){
 
     strncpy(type,&ts_line[34],10);
     type[10] = '\0';
-
+    
     if(name[0] == '_'){
       strncpy(val,&ts_line[45],33);
       val[32] = '\0';
     }
     else
     {
-      strcpy(val,"??");
+      strcpy(val,"?");
     }
 
     if(strstr(type,"char"))
-      sprintf(strline,"%s %s %s\n",name,"db",val);
+      if(name[0] == '_')
+        sprintf(strline,"%s %s %s %s %d %s\n",name,"db",val,",\'$\',",10,"dup (?)"); // remplazar 10 por el largo
+      else
+        sprintf(strline,"%s %s %s\n",name,"db",val);
     else
       sprintf(strline,"%s %s %s\n",name,"dd",val);
 

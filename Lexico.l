@@ -235,9 +235,18 @@ void cargar_simbolo(char* name, int type, char* val){
 			sprintf(straux, "_%-32s|%-10s|%-32s|\n", name, "float", val);
 			break;
 		case CARAC:
+			// Sacar " al inicio y al final (?)
 			strcpy(valaux,val+1);
       		valaux[strlen(valaux)-1] = '\0';
-			sprintf(straux, "_%-32s|%-10s|%-32s|%-10d\n", name, "char", valaux, strlen(valaux));
+
+			int i;
+
+			// Remplazar espacios por _ para el nombre de la variable
+			for(i=0; i<strlen(valaux); i++){
+				if(valaux[i]==' ')
+					valaux[i]='_';
+			}
+			sprintf(straux, "_%-32s|%-10s|%-32s|%-10d\n", valaux, "char", name, strlen(valaux));
 			break;
 	}
 
