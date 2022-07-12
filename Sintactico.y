@@ -323,7 +323,7 @@ void generar_assembler(){
     //Coloca la etiqueta de salto en caso de llegar a la posicion correspondiente
     for(j = 0; j <= p_etiq; j++){ 
       if(etiq[j].pi_pos == p_pi_aux+1){
-        sprintf(strline,"ETIQ%d\n\n",etiq[j].num_etiq);
+        sprintf(strline,"ETIQ%d:\n\n",etiq[j].num_etiq);
         fputs(strline,pf);
 
         etiq[j].pi_pos == -1;
@@ -400,7 +400,7 @@ void generar_assembler(){
     if(strcmp(elemento,"WHILE_ET") == 0){      
       aux_t_etiq_w[++p_aux_t_etiq_w] = ++cont_while;
 
-      sprintf(strline,"%s%d\n","ETIQ_W",cont_while);
+      sprintf(strline,"%s%d:\n","ETIQ_W",cont_while);
       fputs(strline,pf);
 
       continue;
