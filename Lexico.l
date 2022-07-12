@@ -232,6 +232,12 @@ void cargar_simbolo(char* name, int type, char* val){
 			sprintf(straux, "_%-32s|%-10s|%-32s|\n", name, "int", val);
 			break;
 		case FLOTANTE:
+			printf("Cambiando Variable float por X_X");
+			int j;
+			for(j=0;j<strlen(name);j++)
+				if(name[j]=='.')
+					name[j]='_';
+
 			sprintf(straux, "_%-32s|%-10s|%-32s|\n", name, "float", val);
 			break;
 		case CARAC:

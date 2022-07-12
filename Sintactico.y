@@ -32,6 +32,7 @@ char a_comp[3];
 char b_comp[3];
 char simbolo_aux[33];
 char aux_salto[5];
+char aux[100];
 
 int pila_pos_pi[10];
 int pila_type[50];
@@ -49,6 +50,8 @@ int declarados = 0;
 
 int yyerror();
 int yylex();
+
+int j;
 
 void generar_archivo_cod_inter();
 void generar_assembler();
@@ -215,8 +218,25 @@ termino:    termino OP_MUL factor {insertar("*"); evaluar_type(); printf("Sintac
 
 factor:     PAR_A expresion PAR_C 
             | ID          {insertar((char*)$1); buscar_type((char*)$1);}
-            | CTE_STRING  {insertar((char*)$1); apilar_type(CARAC);}
-            | CTE_FLOAT   {insertar((char*)$1); apilar_type(FLOTANTE);}
+            | CTE_STRING  {
+                          // Sacar " al inicio y al final (?)
+                          strcpy(aux,(char*)$1 +1);
+                          aux[strlen((char*)$1)-2] = '\0';
+                          aux[0]='_';
+                          
+                          for(j=0;j<strlen(aux);j++)
+                            if(aux[j]==' ')
+                              aux[j]='_';
+                          printf("PRINT AUX %s\n\n",aux);
+                          insertar(aux); apilar_type(CARAC);}
+            | CTE_FLOAT   {
+                          strcpy(aux,(char*)$1);
+                          for(j=0;j<strlen(aux);j++)
+                            if(aux[j]=='.')
+                              aux[j]='_';
+                          
+                          insertar(aux);
+                          apilar_type(FLOTANTE);}
             | CTE_INTEGER {insertar((char*)$1); apilar_type(ENTERO);};
 
 %%
