@@ -233,12 +233,18 @@ void cargar_simbolo(char* name, int type, char* val){
 			break;
 		case FLOTANTE:
 			printf("Cambiando Variable float por X_X");
+
+			char aux[50];
+
+			strcpy(aux,val);
+
 			int j;
 			for(j=0;j<strlen(name);j++)
 				if(name[j]=='.')
 					name[j]='_';
+			
 
-			sprintf(straux, "_%-32s|%-10s|%-32s|\n", name, "float", val);
+			sprintf(straux, "_%-32s|%-10s|%-32s|\n", name, "float", aux);
 			break;
 		case CARAC:
 			// Sacar " al inicio y al final (?)
