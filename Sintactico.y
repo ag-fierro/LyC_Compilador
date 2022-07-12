@@ -255,7 +255,7 @@ void generar_archivo_cod_inter(){
 //Genera el codigo assembler
 void generar_assembler(){
   int cont_if_in = 1, cont_while = 0, free = 1, elem_type, i, j, fetch, aux_t_etiq[10], p_aux_t_etiq = -1, aux_t_etiq_w[10], p_aux_t_etiq_w = -1;
-  char strline[100], ts_line[100], elemento[33], name[33], val[33], type[10], t_jump[4];
+  char strline[100], ts_line[100], elemento[33], name[33], val[33], type[10], t_jump[4], length[10];
   FILE *pf, *pf_ts;
 
   printf("Inicio generacion de Codigo Assembler\n");
@@ -283,7 +283,7 @@ void generar_assembler(){
 
     strncpy(type,&ts_line[34],10);
     type[10] = '\0';
-    
+        
     if(name[0] == '_'){
       strncpy(val,&ts_line[45],33);
       val[32] = '\0';
@@ -293,11 +293,15 @@ void generar_assembler(){
       strcpy(val,"?");
     }
 
-    if(strstr(type,"char"))
+    strncpy(length,&ts_line[78],10);
+    length[10] = '\0';
+
+    if(strstr(type,"char")){
       if(name[0] == '_')
-        sprintf(strline,"%s %s %s %s %d %s\n",name,"db",val,",\'$\',",10,"dup (?)"); // remplazar 10 por el largo
+        sprintf(strline,"%s %s %s %s %d %s\n",name,"db",val,",\'$\',",atoi(length),"dup (?)");
       else
         sprintf(strline,"%s %s %s\n",name,"db",val);
+    }
     else
       sprintf(strline,"%s %s %s\n",name,"dd",val);
 
